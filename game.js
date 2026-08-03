@@ -435,7 +435,7 @@
   function scoreHit() {
     state.score += state.streak;
     state.streak = Math.min(9, state.streak + 1);
-    state.speed = Math.min(535, 255 + state.score * 4.5 + Math.max(0, state.streak - 1) * 5);
+    state.speed = difficultySpeed();
     state.flashes.push({ life: 0.16, color: colors()[state.drop.color].glow });
     burst(canvas.width / 2, impactY(), colors()[state.drop.color].value, Math.round(28 * effectStyle().particleBoost));
     if (effectStyle().ring) state.rings.push({ x: canvas.width / 2, y: impactY(), radius: 24, life: 0.5, color: colors()[state.drop.color].value });
@@ -491,6 +491,12 @@
   function clearDrop(delay) {
     state.drop = null;
     state.spawnDelay = Math.max(0.1, delay);
+  }
+
+  function difficultySpeed(score = state.score, streak = state.streak) {
+    const ramp = score <= 8 ? score * 7 : 56 + (score - 8) * 10.5;
+    const streakBoost = Math.max(0, streak - 1) * 7;
+    return Math.min(690, 265 + ramp + streakBoost);
   }
 
   function topColorIndex() {
@@ -984,6 +990,7 @@
         effect: state.effectId,
         mission: activeMission().id,
         revived: state.revived,
+        speed: state.speed,
         topColor: colors()[topColorIndex()].name
       }),
       forceCoinDrop(value = 7) {
@@ -1019,6 +1026,9 @@
       resetTutorial() {
         state.tutorialSeen = false;
         save(STORAGE.tutorial, "0");
+      },
+      speedFor(score, streak = 1) {
+        return difficultySpeed(score, streak);
       }
     };
   });

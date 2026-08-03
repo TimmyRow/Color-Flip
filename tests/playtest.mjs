@@ -95,6 +95,24 @@ async function repeatedColorRegression(browser) {
   console.log("PASS repeated-color regression");
 }
 
+async function speedProgressionRegression(browser) {
+  await withPage(browser, profiles[0], async (page) => {
+    await page.goto(gameUrl, { waitUntil: "domcontentloaded" });
+    await page.waitForSelector("#game");
+    await page.waitForFunction(() => Boolean(window.__colorFlipDebug));
+    const speeds = await page.evaluate(() => ({
+      start: window.__colorFlipDebug.speedFor(0, 1),
+      early: window.__colorFlipDebug.speedFor(8, 3),
+      mid: window.__colorFlipDebug.speedFor(18, 5),
+      late: window.__colorFlipDebug.speedFor(40, 8)
+    }));
+    expect(speeds.early > speeds.start + 60, `early speed ramp too flat: ${JSON.stringify(speeds)}`);
+    expect(speeds.mid > speeds.early + 95, `mid speed ramp too flat: ${JSON.stringify(speeds)}`);
+    expect(speeds.late > speeds.mid, `late speed did not keep increasing: ${JSON.stringify(speeds)}`);
+  });
+  console.log("PASS speed progression regression");
+}
+
 async function runProfile(browser, profile) {
   await withPage(browser, profile, async (page) => {
     await page.goto(gameUrl, { waitUntil: "domcontentloaded" });
@@ -195,6 +213,7 @@ async function run() {
     await storageBlockedFallback(browser);
     await matchedColorRegression(browser);
     await repeatedColorRegression(browser);
+    await speedProgressionRegression(browser);
     await missionAndReviveRegression(browser);
   } finally {
     await browser.close();
