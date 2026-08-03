@@ -83,6 +83,18 @@ async function matchedColorRegression(browser) {
   console.log("PASS matched-color regression");
 }
 
+async function repeatedColorRegression(browser) {
+  await withPage(browser, profiles[0], async (page) => {
+    await page.goto(gameUrl, { waitUntil: "domcontentloaded" });
+    await page.waitForSelector("#game");
+    await page.waitForFunction(() => Boolean(window.__colorFlipDebug));
+    const generated = await page.evaluate(() => window.__colorFlipDebug.generateBlockColors(400));
+    const tripleIndex = generated.findIndex((color, index, list) => index >= 2 && color === list[index - 1] && color === list[index - 2]);
+    expect(tripleIndex === -1, `same color appeared three times in a row at index ${tripleIndex}: ${generated.slice(Math.max(0, tripleIndex - 4), tripleIndex + 3).join(",")}`);
+  });
+  console.log("PASS repeated-color regression");
+}
+
 async function runProfile(browser, profile) {
   await withPage(browser, profile, async (page) => {
     await page.goto(gameUrl, { waitUntil: "domcontentloaded" });
@@ -150,6 +162,7 @@ async function run() {
     }
     await storageBlockedFallback(browser);
     await matchedColorRegression(browser);
+    await repeatedColorRegression(browser);
   } finally {
     await browser.close();
   }

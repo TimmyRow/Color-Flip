@@ -94,6 +94,7 @@
     targetRotation: 0,
     drop: null,
     nextDrop: null,
+    blockHistory: [],
     speed: 292,
     spawnDelay: 0,
     shake: 0,
@@ -244,6 +245,7 @@
     state.spawnDelay = 0.2;
     state.shake = 0;
     state.drop = null;
+    state.blockHistory.length = 0;
     state.particles.length = 0;
     state.floats.length = 0;
     state.flashes.length = 0;
@@ -267,7 +269,19 @@
     if (state.score >= 2 && Math.random() < 0.22) {
       return { kind: "coin", value: 5 + Math.floor(Math.random() * 6) };
     }
-    return { kind: "block", color: Math.floor(Math.random() * colors().length) };
+    return { kind: "block", color: chooseBlockColor() };
+  }
+
+  function chooseBlockColor() {
+    const recent = state.blockHistory;
+    let color = Math.floor(Math.random() * colors().length);
+    if (recent.length >= 2 && recent.at(-1) === color && recent.at(-2) === color) {
+      const options = colors().map((_, index) => index).filter((index) => index !== color);
+      color = options[Math.floor(Math.random() * options.length)];
+    }
+    recent.push(color);
+    if (recent.length > 2) recent.shift();
+    return color;
   }
 
   function spawnDrop() {
@@ -816,6 +830,14 @@
       rotateToTurns(turns) {
         state.targetRotation = turns * (Math.PI / 2);
         state.rotation = state.targetRotation;
+      },
+      generateBlockColors(count) {
+        state.blockHistory.length = 0;
+        const generated = [];
+        for (let index = 0; index < count; index += 1) {
+          generated.push(chooseBlockColor());
+        }
+        return generated;
       },
       grantCoins(value) {
         state.wallet += value;
