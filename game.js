@@ -11,7 +11,6 @@
   const missionEl = document.querySelector("#mission");
   const playButton = document.querySelector("#play");
   const reviveButton = document.querySelector("#revive");
-  const flipButton = document.querySelector("#flip");
   const pauseButton = document.querySelector("#pause");
   const muteButton = document.querySelector("#mute");
   const shopButton = document.querySelector("#shop");
@@ -939,7 +938,6 @@
     }
   });
   reviveButton.addEventListener("click", reviveGame);
-  flipButton.addEventListener("pointerdown", handlePrimaryAction);
   canvas.addEventListener("pointerdown", handlePrimaryAction);
   restartButton.addEventListener("click", resetGame);
   pauseButton.addEventListener("click", pauseGame);

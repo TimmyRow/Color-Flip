@@ -231,19 +231,7 @@ button:active {
 
 .controls {
   display: grid;
-  grid-template-columns: minmax(124px, 1fr) repeat(4, minmax(76px, 0.44fr));
-}
-
-.controls .primary {
-  background: linear-gradient(135deg, #f6f7fb, #cdd6e8);
-  color: #121722;
-}
-
-@media (pointer: coarse) {
-  .controls .primary {
-    min-height: 64px;
-    font-size: 1.08rem;
-  }
+  grid-template-columns: repeat(4, minmax(76px, 1fr));
 }
 
 .shop-panel {
@@ -369,16 +357,6 @@ button:active {
     width: 100%;
   }
 
-  .controls {
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .controls .primary {
-    grid-column: span 2;
-    min-height: 72px;
-    font-size: 1.14rem;
-  }
-
   #game {
     width: auto;
     height: 100%;
@@ -395,20 +373,9 @@ button:active {
   }
 }
 
-@media (pointer: coarse) and (min-height: 561px) {
+@media (max-width: 680px) {
   .controls {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-
-  .controls button:not(.primary) {
-    order: 1;
-  }
-
-  .controls .primary {
-    order: 2;
-    grid-column: 2 / 4;
-    min-height: 78px;
-    font-size: 1.18rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -432,12 +399,6 @@ button:active {
   .stats,
   .controls {
     grid-template-columns: 1fr;
-  }
-
-  .controls .primary {
-    grid-column: auto;
-    min-height: 74px;
-    font-size: 1.08rem;
   }
 
   #game {

@@ -128,7 +128,7 @@ async function runProfile(browser, profile) {
 
     await page.locator("#play").click();
     await page.waitForFunction(() => window.__colorFlipDebug?.getState().mode === "playing");
-    await page.locator("#flip").dispatchEvent("pointerdown", { pointerType: "touch", button: 0 });
+    await page.locator("#game").dispatchEvent("pointerdown", { pointerType: "touch", button: 0 });
     await page.waitForTimeout(250);
     const state = await page.evaluate(() => window.__colorFlipDebug.getState());
     expect(state.mode === "playing", `${profile.name} game did not stay playable`);
