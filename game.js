@@ -360,7 +360,7 @@
 
   function topColorIndex() {
     const quarterTurns = Math.round(state.targetRotation / (Math.PI / 2));
-    return ((quarterTurns % colors().length) + colors().length) % colors().length;
+    return (((-quarterTurns) % colors().length) + colors().length) % colors().length;
   }
 
   function impactY() {
@@ -809,6 +809,13 @@
       }),
       forceCoinDrop(value = 7) {
         state.drop = { kind: "coin", value, x: canvas.width / 2, y: impactY() - 12, size: 58, angle: 0, spin: 0 };
+      },
+      forceBlockDrop(color = topColorIndex()) {
+        state.drop = { kind: "block", color, x: canvas.width / 2, y: impactY() - 12, size: 66, angle: 0, spin: 0 };
+      },
+      rotateToTurns(turns) {
+        state.targetRotation = turns * (Math.PI / 2);
+        state.rotation = state.targetRotation;
       },
       grantCoins(value) {
         state.wallet += value;

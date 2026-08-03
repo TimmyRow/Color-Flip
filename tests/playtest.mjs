@@ -61,6 +61,28 @@ async function storageBlockedFallback(browser) {
   console.log("PASS storage-blocked fallback");
 }
 
+async function matchedColorRegression(browser) {
+  await withPage(browser, profiles[0], async (page) => {
+    await page.goto(gameUrl, { waitUntil: "domcontentloaded" });
+    await page.waitForSelector("#game");
+    await page.waitForFunction(() => Boolean(window.__colorFlipDebug));
+    await page.locator("#play").click();
+    for (let turns = 0; turns < 4; turns += 1) {
+      await page.evaluate((turnCount) => {
+        window.__colorFlipDebug.rotateToTurns(turnCount);
+        const topColorName = window.__colorFlipDebug.getState().topColor;
+        const colorIndexByName = { red: 0, yellow: 1, blue: 2, green: 3 };
+        window.__colorFlipDebug.forceBlockDrop(colorIndexByName[topColorName]);
+      }, turns);
+      await page.waitForTimeout(140);
+      const state = await page.evaluate(() => window.__colorFlipDebug.getState());
+      expect(state.mode === "playing", `matched color ended game at turn ${turns}: ${JSON.stringify(state)}`);
+      expect(state.score > turns, `matched color did not score at turn ${turns}: ${JSON.stringify(state)}`);
+    }
+  });
+  console.log("PASS matched-color regression");
+}
+
 async function runProfile(browser, profile) {
   await withPage(browser, profile, async (page) => {
     await page.goto(gameUrl, { waitUntil: "domcontentloaded" });
@@ -127,6 +149,7 @@ async function run() {
       await runProfile(browser, profile);
     }
     await storageBlockedFallback(browser);
+    await matchedColorRegression(browser);
   } finally {
     await browser.close();
   }
