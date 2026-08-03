@@ -6,56 +6,171 @@
   const scoreEl = document.querySelector("#score");
   const bestEl = document.querySelector("#best");
   const streakEl = document.querySelector("#streak");
+  const coinsEl = document.querySelector("#coins");
   const curtain = document.querySelector("#curtain");
   const playButton = document.querySelector("#play");
   const flipButton = document.querySelector("#flip");
   const pauseButton = document.querySelector("#pause");
   const muteButton = document.querySelector("#mute");
+  const shopButton = document.querySelector("#shop");
   const restartButton = document.querySelector("#restart");
+  const shopPanel = document.querySelector("#shopPanel");
+  const shopClose = document.querySelector("#shopClose");
+  const shopWallet = document.querySelector("#shopWallet");
+  const paletteShop = document.querySelector("#paletteShop");
+  const backgroundShop = document.querySelector("#backgroundShop");
+  const coinShop = document.querySelector("#coinShop");
 
-  const STORAGE_KEY = "color-flip-best";
-  const COLORS = [
-    { name: "red", value: "#ff4d5f", glow: "rgba(255, 77, 95, 0.38)" },
-    { name: "yellow", value: "#ffd15c", glow: "rgba(255, 209, 92, 0.36)" },
-    { name: "blue", value: "#46a6ff", glow: "rgba(70, 166, 255, 0.38)" },
-    { name: "green", value: "#3ee28a", glow: "rgba(62, 226, 138, 0.36)" }
+  const STORAGE = {
+    best: "color-flip-best",
+    coins: "color-flip-coins",
+    palette: "color-flip-palette",
+    background: "color-flip-background",
+    coin: "color-flip-coin",
+    ownedPalettes: "color-flip-owned-palettes",
+    ownedBackgrounds: "color-flip-owned-backgrounds",
+    ownedCoins: "color-flip-owned-coins"
+  };
+
+  const PALETTES = [
+    {
+      id: "classic",
+      name: "Classic Pop",
+      price: 0,
+      note: "Bright arcade colors.",
+      colors: [
+        { name: "red", value: "#ff4d5f", glow: "rgba(255, 77, 95, 0.38)" },
+        { name: "yellow", value: "#ffd15c", glow: "rgba(255, 209, 92, 0.36)" },
+        { name: "blue", value: "#46a6ff", glow: "rgba(70, 166, 255, 0.38)" },
+        { name: "green", value: "#3ee28a", glow: "rgba(62, 226, 138, 0.36)" }
+      ]
+    },
+    {
+      id: "neon",
+      name: "Neon Circuit",
+      price: 80,
+      note: "Sharper electric sides.",
+      colors: [
+        { name: "pink", value: "#ff3bd4", glow: "rgba(255, 59, 212, 0.38)" },
+        { name: "lime", value: "#b6ff3b", glow: "rgba(182, 255, 59, 0.34)" },
+        { name: "cyan", value: "#27f3ff", glow: "rgba(39, 243, 255, 0.35)" },
+        { name: "violet", value: "#8a5cff", glow: "rgba(138, 92, 255, 0.38)" }
+      ]
+    },
+    {
+      id: "sorbet",
+      name: "Sorbet Tilt",
+      price: 120,
+      note: "Soft, readable pastels.",
+      colors: [
+        { name: "berry", value: "#ff7790", glow: "rgba(255, 119, 144, 0.34)" },
+        { name: "mango", value: "#ffc857", glow: "rgba(255, 200, 87, 0.34)" },
+        { name: "pool", value: "#65d4ff", glow: "rgba(101, 212, 255, 0.34)" },
+        { name: "mint", value: "#6df2b2", glow: "rgba(109, 242, 178, 0.34)" }
+      ]
+    }
+  ];
+
+  const BACKGROUNDS = [
+    { id: "midnight", name: "Midnight Glass", price: 0, note: "Clean dark arena.", stops: ["#151b29", "#10141f", "#181923"], line: "rgba(255, 255, 255, 0.045)" },
+    { id: "sunrise", name: "Sunrise Rush", price: 90, note: "Warm arcade glow.", stops: ["#251727", "#171626", "#2d1f16"], line: "rgba(255, 209, 92, 0.06)" },
+    { id: "mint", name: "Mint Night", price: 110, note: "Cool green motion.", stops: ["#10211e", "#101822", "#171b27"], line: "rgba(62, 226, 138, 0.06)" }
+  ];
+
+  const COIN_STYLES = [
+    { id: "gold", name: "Gold Coins", price: 0, note: "Classic coin sparkle.", fill: "#ffd15c", rim: "#fff0a8" },
+    { id: "ruby", name: "Ruby Coins", price: 70, note: "Red bonus drops.", fill: "#ff5a76", rim: "#ffd1dc" },
+    { id: "aqua", name: "Aqua Coins", price: 100, note: "Cool blue rewards.", fill: "#4de8ff", rim: "#d8fbff" }
   ];
 
   const state = {
     mode: "ready",
     lastTime: 0,
     score: 0,
-    best: readBest(),
+    best: readNumber(STORAGE.best, 0),
+    wallet: readNumber(STORAGE.coins, 0),
     streak: 1,
     rotation: 0,
     targetRotation: 0,
     drop: null,
-    nextColor: 0,
+    nextDrop: null,
     speed: 292,
     spawnDelay: 0,
     shake: 0,
     muted: false,
+    paletteId: readString(STORAGE.palette, "classic"),
+    backgroundId: readString(STORAGE.background, "midnight"),
+    coinId: readString(STORAGE.coin, "gold"),
+    ownedPalettes: readList(STORAGE.ownedPalettes, ["classic"]),
+    ownedBackgrounds: readList(STORAGE.ownedBackgrounds, ["midnight"]),
+    ownedCoins: readList(STORAGE.ownedCoins, ["gold"]),
     particles: [],
+    floats: [],
     flashes: []
   };
 
   const poki = createPokiBridge();
-  bestEl.textContent = String(state.best);
+  ensureValidUnlocks();
+  updateHud();
+  renderShop();
 
-  function readBest() {
+  function readNumber(key, fallback) {
     try {
-      return Number(localStorage.getItem(STORAGE_KEY) || "0");
+      const value = Number(localStorage.getItem(key));
+      return Number.isFinite(value) ? value : fallback;
     } catch {
-      return 0;
+      return fallback;
     }
   }
 
-  function writeBest(value) {
+  function readString(key, fallback) {
     try {
-      localStorage.setItem(STORAGE_KEY, String(value));
+      return localStorage.getItem(key) || fallback;
+    } catch {
+      return fallback;
+    }
+  }
+
+  function readList(key, fallback) {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(key) || "null");
+      return Array.isArray(parsed) ? [...new Set([...fallback, ...parsed])] : fallback;
+    } catch {
+      return fallback;
+    }
+  }
+
+  function save(key, value) {
+    try {
+      localStorage.setItem(key, typeof value === "string" ? value : JSON.stringify(value));
     } catch {
       // Device storage is optional for Poki builds.
     }
+  }
+
+  function ensureValidUnlocks() {
+    if (!PALETTES.some((item) => item.id === state.paletteId)) state.paletteId = "classic";
+    if (!BACKGROUNDS.some((item) => item.id === state.backgroundId)) state.backgroundId = "midnight";
+    if (!COIN_STYLES.some((item) => item.id === state.coinId)) state.coinId = "gold";
+    for (const id of ["classic"]) if (!state.ownedPalettes.includes(id)) state.ownedPalettes.push(id);
+    for (const id of ["midnight"]) if (!state.ownedBackgrounds.includes(id)) state.ownedBackgrounds.push(id);
+    for (const id of ["gold"]) if (!state.ownedCoins.includes(id)) state.ownedCoins.push(id);
+  }
+
+  function palette() {
+    return PALETTES.find((item) => item.id === state.paletteId) || PALETTES[0];
+  }
+
+  function colors() {
+    return palette().colors;
+  }
+
+  function background() {
+    return BACKGROUNDS.find((item) => item.id === state.backgroundId) || BACKGROUNDS[0];
+  }
+
+  function coinStyle() {
+    return COIN_STYLES.find((item) => item.id === state.coinId) || COIN_STYLES[0];
   }
 
   function createPokiBridge() {
@@ -130,8 +245,9 @@
     state.shake = 0;
     state.drop = null;
     state.particles.length = 0;
+    state.floats.length = 0;
     state.flashes.length = 0;
-    state.nextColor = Math.floor(Math.random() * COLORS.length);
+    state.nextDrop = makeNextDrop();
     curtain.classList.add("hidden");
     pauseButton.textContent = "Pause";
     updateHud();
@@ -143,26 +259,32 @@
     scoreEl.textContent = String(state.score);
     bestEl.textContent = String(state.best);
     streakEl.textContent = `x${state.streak}`;
+    coinsEl.textContent = String(state.wallet);
+    shopWallet.textContent = `${state.wallet} coins`;
+  }
+
+  function makeNextDrop() {
+    if (state.score >= 2 && Math.random() < 0.22) {
+      return { kind: "coin", value: 5 + Math.floor(Math.random() * 6) };
+    }
+    return { kind: "block", color: Math.floor(Math.random() * colors().length) };
   }
 
   function spawnDrop() {
-    const color = state.nextColor;
-    let next = Math.floor(Math.random() * COLORS.length);
-    if (Math.random() < 0.54) {
-      next = (color + 1 + Math.floor(Math.random() * 3)) % COLORS.length;
-    }
-    state.nextColor = next;
+    const next = state.nextDrop || makeNextDrop();
+    state.nextDrop = makeNextDrop();
     state.drop = {
-      color,
+      ...next,
       x: canvas.width / 2,
       y: -58,
-      size: 66,
+      size: next.kind === "coin" ? 58 : 66,
       angle: Math.random() * Math.PI,
       spin: (Math.random() > 0.5 ? 1 : -1) * (1.1 + Math.random() * 0.9)
     };
   }
 
   function rotateSquare() {
+    if (shopPanel && !shopPanel.classList.contains("hidden")) return;
     if (state.mode === "ready" || state.mode === "over") {
       resetGame();
       return;
@@ -197,7 +319,7 @@
     poki.gameplayStop();
     if (state.score > state.best) {
       state.best = state.score;
-      writeBest(state.best);
+      save(STORAGE.best, String(state.best));
     }
     updateHud();
     curtain.querySelector("h2").textContent = state.score === state.best && state.score > 0 ? "New best." : "Try again.";
@@ -209,20 +331,36 @@
   }
 
   function scoreHit() {
-    state.score += 1 * state.streak;
+    state.score += state.streak;
     state.streak = Math.min(9, state.streak + 1);
-    state.speed = Math.min(560, state.speed + 7);
-    updateHud();
-    state.flashes.push({ life: 0.16, color: COLORS[state.drop.color].glow });
-    burst(canvas.width / 2, impactY(), COLORS[state.drop.color].value, 28);
+    state.speed = Math.min(570, state.speed + 7);
+    state.flashes.push({ life: 0.16, color: colors()[state.drop.color].glow });
+    burst(canvas.width / 2, impactY(), colors()[state.drop.color].value, 28);
     playTone(520 + state.streak * 38, 0.05, "sine", 0.035);
+    clearDrop(0.34 - state.score * 0.004);
+    updateHud();
+  }
+
+  function collectCoin() {
+    const value = state.drop.value;
+    state.wallet += value;
+    save(STORAGE.coins, String(state.wallet));
+    state.floats.push({ text: `+${value}`, x: canvas.width / 2, y: impactY() - 12, life: 0.85 });
+    burst(canvas.width / 2, impactY(), coinStyle().fill, 24);
+    playTone(760 + value * 16, 0.07, "square", 0.025);
+    clearDrop(0.18);
+    updateHud();
+    renderShop();
+  }
+
+  function clearDrop(delay) {
     state.drop = null;
-    state.spawnDelay = Math.max(0.12, 0.34 - state.score * 0.004);
+    state.spawnDelay = Math.max(0.1, delay);
   }
 
   function topColorIndex() {
     const quarterTurns = Math.round(state.targetRotation / (Math.PI / 2));
-    return ((quarterTurns % COLORS.length) + COLORS.length) % COLORS.length;
+    return ((quarterTurns % colors().length) + colors().length) % colors().length;
   }
 
   function impactY() {
@@ -247,6 +385,13 @@
       if (particle.life <= 0) state.particles.splice(index, 1);
     }
 
+    for (let index = state.floats.length - 1; index >= 0; index -= 1) {
+      const float = state.floats[index];
+      float.life -= dt;
+      float.y -= 74 * dt;
+      if (float.life <= 0) state.floats.splice(index, 1);
+    }
+
     for (let index = state.flashes.length - 1; index >= 0; index -= 1) {
       state.flashes[index].life -= dt;
       if (state.flashes[index].life <= 0) state.flashes.splice(index, 1);
@@ -262,10 +407,14 @@
     state.drop.y += state.speed * dt;
     state.drop.angle += state.drop.spin * dt;
     if (state.drop.y + state.drop.size / 2 >= impactY()) {
-      if (state.drop.color === topColorIndex()) {
+      if (state.drop.kind === "coin") {
+        collectCoin();
+      } else if (state.drop.color === topColorIndex()) {
         scoreHit();
       } else {
+        state.streak = 1;
         burst(canvas.width / 2, impactY(), "#f6f7fb", 34);
+        updateHud();
         gameOver();
       }
     }
@@ -291,7 +440,6 @@
     ctx.save();
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     drawBackground();
-
     const shakeX = (Math.random() - 0.5) * state.shake;
     const shakeY = (Math.random() - 0.5) * state.shake;
     ctx.translate(shakeX, shakeY);
@@ -300,18 +448,20 @@
     drawDrop();
     drawNext();
     drawParticles();
+    drawFloats();
     ctx.restore();
   }
 
   function drawBackground() {
+    const bg = background();
     const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-    gradient.addColorStop(0, "#151b29");
-    gradient.addColorStop(0.54, "#10141f");
-    gradient.addColorStop(1, "#181923");
+    gradient.addColorStop(0, bg.stops[0]);
+    gradient.addColorStop(0.54, bg.stops[1]);
+    gradient.addColorStop(1, bg.stops[2]);
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.045)";
+    ctx.strokeStyle = bg.line;
     ctx.lineWidth = 2;
     const gap = 72;
     for (let y = -gap; y < canvas.height + gap; y += gap) {
@@ -364,8 +514,8 @@
     ];
 
     sides.forEach((side, index) => {
-      ctx.shadowColor = COLORS[index].glow;
-      ctx.strokeStyle = COLORS[index].value;
+      ctx.shadowColor = colors()[index].glow;
+      ctx.strokeStyle = colors()[index].value;
       ctx.beginPath();
       ctx.moveTo(side[0][0], side[0][1]);
       ctx.lineTo(side[1][0], side[1][1]);
@@ -382,36 +532,66 @@
   function drawDrop() {
     if (!state.drop) return;
     const drop = state.drop;
-    const color = COLORS[drop.color];
     ctx.save();
     ctx.translate(drop.x, drop.y);
     ctx.rotate(drop.angle);
+    if (drop.kind === "coin") {
+      drawCoin(0, 0, drop.size / 2);
+    } else {
+      const color = colors()[drop.color];
+      ctx.shadowBlur = 26;
+      ctx.shadowColor = color.glow;
+      ctx.fillStyle = color.value;
+      roundRect(-drop.size / 2, -drop.size / 2, drop.size, drop.size, 12);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = "rgba(255, 255, 255, 0.34)";
+      roundRect(-drop.size * 0.25, -drop.size * 0.28, drop.size * 0.24, drop.size * 0.16, 6);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  function drawCoin(x, y, radius) {
+    const style = coinStyle();
+    ctx.save();
     ctx.shadowBlur = 26;
-    ctx.shadowColor = color.glow;
-    ctx.fillStyle = color.value;
-    roundRect(-drop.size / 2, -drop.size / 2, drop.size, drop.size, 12);
+    ctx.shadowColor = style.fill;
+    ctx.fillStyle = style.fill;
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
     ctx.fill();
     ctx.shadowBlur = 0;
-    ctx.fillStyle = "rgba(255, 255, 255, 0.34)";
-    roundRect(-drop.size * 0.25, -drop.size * 0.28, drop.size * 0.24, drop.size * 0.16, 6);
-    ctx.fill();
+    ctx.lineWidth = Math.max(4, radius * 0.16);
+    ctx.strokeStyle = style.rim;
+    ctx.stroke();
+    ctx.fillStyle = "rgba(17, 23, 34, 0.32)";
+    ctx.font = `900 ${Math.max(20, radius * 0.92)}px system-ui, sans-serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("$", x, y + radius * 0.04);
     ctx.restore();
   }
 
   function drawNext() {
-    const color = COLORS[state.nextColor];
+    const next = state.nextDrop || { kind: "block", color: 0 };
     const x = canvas.width - 92;
     const y = 80;
     ctx.save();
     ctx.fillStyle = "rgba(255, 255, 255, 0.08)";
     roundRect(x - 44, y - 42, 88, 84, 8);
     ctx.fill();
-    ctx.fillStyle = color.value;
-    ctx.shadowColor = color.glow;
-    ctx.shadowBlur = 18;
-    roundRect(x - 20, y - 10, 40, 40, 8);
-    ctx.fill();
-    ctx.shadowBlur = 0;
+    if (next.kind === "coin") {
+      drawCoin(x, y + 10, 21);
+    } else {
+      const color = colors()[next.color];
+      ctx.fillStyle = color.value;
+      ctx.shadowColor = color.glow;
+      ctx.shadowBlur = 18;
+      roundRect(x - 20, y - 10, 40, 40, 8);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    }
     ctx.fillStyle = "rgba(246, 247, 251, 0.72)";
     ctx.font = "800 18px system-ui, sans-serif";
     ctx.textAlign = "center";
@@ -429,6 +609,20 @@
     ctx.globalAlpha = 1;
   }
 
+  function drawFloats() {
+    ctx.save();
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.font = "900 34px system-ui, sans-serif";
+    for (const float of state.floats) {
+      ctx.globalAlpha = Math.max(0, float.life / 0.85);
+      ctx.fillStyle = coinStyle().rim;
+      ctx.fillText(float.text, float.x, float.y);
+    }
+    ctx.restore();
+    ctx.globalAlpha = 1;
+  }
+
   function roundRect(x, y, width, height, radius) {
     const r = Math.min(radius, width / 2, height / 2);
     ctx.beginPath();
@@ -438,6 +632,94 @@
     ctx.arcTo(x, y + height, x, y, r);
     ctx.arcTo(x, y, x + width, y, r);
     ctx.closePath();
+  }
+
+  function renderShop() {
+    renderShopGroup(paletteShop, PALETTES, "palette");
+    renderShopGroup(backgroundShop, BACKGROUNDS, "background");
+    renderShopGroup(coinShop, COIN_STYLES, "coin");
+    updateHud();
+  }
+
+  function renderShopGroup(container, items, type) {
+    container.replaceChildren(...items.map((item) => {
+      const owned = ownedList(type).includes(item.id);
+      const selected = selectedId(type) === item.id;
+      const article = document.createElement("article");
+      article.className = "shop-item";
+
+      const swatches = document.createElement("div");
+      swatches.className = "swatches";
+      swatchColors(item, type).forEach((color) => {
+        const swatch = document.createElement("i");
+        swatch.style.background = color;
+        swatches.append(swatch);
+      });
+
+      const name = document.createElement("strong");
+      name.textContent = item.name;
+      const note = document.createElement("small");
+      note.textContent = item.note;
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = selected ? "Selected" : owned ? "Use" : `${item.price} coins`;
+      button.disabled = selected || (!owned && state.wallet < item.price);
+      button.addEventListener("click", () => buyOrSelect(type, item));
+
+      article.append(swatches, name, note, button);
+      return article;
+    }));
+  }
+
+  function swatchColors(item, type) {
+    if (type === "palette") return item.colors.map((color) => color.value);
+    if (type === "background") return item.stops;
+    return [item.fill, item.rim];
+  }
+
+  function ownedList(type) {
+    if (type === "palette") return state.ownedPalettes;
+    if (type === "background") return state.ownedBackgrounds;
+    return state.ownedCoins;
+  }
+
+  function selectedId(type) {
+    if (type === "palette") return state.paletteId;
+    if (type === "background") return state.backgroundId;
+    return state.coinId;
+  }
+
+  function setSelected(type, id) {
+    if (type === "palette") {
+      state.paletteId = id;
+      save(STORAGE.palette, id);
+    } else if (type === "background") {
+      state.backgroundId = id;
+      save(STORAGE.background, id);
+    } else {
+      state.coinId = id;
+      save(STORAGE.coin, id);
+    }
+  }
+
+  function saveOwned(type) {
+    if (type === "palette") save(STORAGE.ownedPalettes, state.ownedPalettes);
+    if (type === "background") save(STORAGE.ownedBackgrounds, state.ownedBackgrounds);
+    if (type === "coin") save(STORAGE.ownedCoins, state.ownedCoins);
+  }
+
+  function buyOrSelect(type, item) {
+    const owned = ownedList(type);
+    if (!owned.includes(item.id)) {
+      if (state.wallet < item.price) return;
+      state.wallet -= item.price;
+      owned.push(item.id);
+      save(STORAGE.coins, String(state.wallet));
+      saveOwned(type);
+      playTone(880, 0.08, "triangle", 0.025);
+    }
+    setSelected(type, item.id);
+    renderShop();
   }
 
   let audioContext = null;
@@ -484,6 +766,12 @@
   canvas.addEventListener("pointerdown", handlePrimaryAction);
   restartButton.addEventListener("click", resetGame);
   pauseButton.addEventListener("click", pauseGame);
+  shopButton.addEventListener("click", () => {
+    if (state.mode === "playing") pauseGame();
+    renderShop();
+    shopPanel.classList.remove("hidden");
+  });
+  shopClose.addEventListener("click", () => shopPanel.classList.add("hidden"));
   muteButton.addEventListener("click", () => {
     state.muted = !state.muted;
     muteButton.textContent = state.muted ? "Muted" : "Sound";
@@ -496,6 +784,7 @@
     }
     if (event.code === "KeyP") pauseGame();
     if (event.code === "KeyR") resetGame();
+    if (event.code === "Escape") shopPanel.classList.add("hidden");
   });
   window.addEventListener("blur", () => {
     if (state.mode === "playing") pauseGame();
@@ -508,10 +797,24 @@
         mode: state.mode,
         score: state.score,
         best: state.best,
+        wallet: state.wallet,
         streak: state.streak,
         hasDrop: Boolean(state.drop),
-        topColor: COLORS[topColorIndex()].name
-      })
+        dropKind: state.drop?.kind || null,
+        nextKind: state.nextDrop?.kind || null,
+        palette: state.paletteId,
+        background: state.backgroundId,
+        coin: state.coinId,
+        topColor: colors()[topColorIndex()].name
+      }),
+      forceCoinDrop(value = 7) {
+        state.drop = { kind: "coin", value, x: canvas.width / 2, y: impactY() - 12, size: 58, angle: 0, spin: 0 };
+      },
+      grantCoins(value) {
+        state.wallet += value;
+        save(STORAGE.coins, String(state.wallet));
+        renderShop();
+      }
     };
   });
   requestAnimationFrame(frame);

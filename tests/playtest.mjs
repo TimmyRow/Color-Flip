@@ -6,8 +6,10 @@ const gameUrl = pathToFileURL(resolve("index.html")).href;
 
 const profiles = [
   { name: "desktop", viewport: { width: 1280, height: 820 }, isMobile: false, hasTouch: false, deviceScaleFactor: 1 },
-  { name: "phone", ...devices["iPhone 14"] },
-  { name: "landscape", ...devices["iPhone 14 landscape"] }
+  { name: "iphone-portrait", ...devices["iPhone 14"] },
+  { name: "iphone-landscape", ...devices["iPhone 14 landscape"] },
+  { name: "ipad-portrait", ...devices["iPad Pro 11"] },
+  { name: "ipad-landscape", ...devices["iPad Pro 11 landscape"] }
 ];
 
 function expect(condition, message) {
@@ -69,6 +71,23 @@ async function runProfile(browser, profile) {
     const state = await page.evaluate(() => window.__colorFlipDebug.getState());
     expect(state.mode === "playing", `${profile.name} game did not stay playable`);
     expect(state.hasDrop, `${profile.name} no falling block spawned`);
+
+    const walletBefore = state.wallet;
+    await page.evaluate(() => window.__colorFlipDebug.forceCoinDrop(8));
+    await page.waitForTimeout(140);
+    const afterCoin = await page.evaluate(() => window.__colorFlipDebug.getState());
+    expect(afterCoin.wallet === walletBefore + 8, `${profile.name} coin did not collect on any color`);
+
+    await page.evaluate(() => window.__colorFlipDebug.grantCoins(320));
+    await page.locator("#shop").click();
+    await page.locator(".shop-item", { hasText: "Neon Circuit" }).locator("button").click();
+    await page.locator(".shop-item", { hasText: "Sunrise Rush" }).locator("button").click();
+    await page.locator(".shop-item", { hasText: "Ruby Coins" }).locator("button").click();
+    await page.locator("#shopClose").click();
+    const afterShop = await page.evaluate(() => window.__colorFlipDebug.getState());
+    expect(afterShop.palette === "neon", `${profile.name} palette purchase did not equip`);
+    expect(afterShop.background === "sunrise", `${profile.name} background purchase did not equip`);
+    expect(afterShop.coin === "ruby", `${profile.name} coin purchase did not equip`);
   });
   console.log(`PASS ${profile.name}`);
 }
