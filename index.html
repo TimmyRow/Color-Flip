@@ -46,8 +46,23 @@
       <button id="pause" type="button">Pause</button>
       <button id="mute" type="button" aria-pressed="false">Sound</button>
       <button id="shop" type="button">Shop</button>
+      <button id="qr" type="button">QR</button>
       <button id="restart" type="button">Restart</button>
     </nav>
+
+    <section id="qrPanel" class="qr-panel hidden" aria-modal="true" role="dialog" aria-labelledby="qrTitle">
+      <div class="qr-card">
+        <header class="qr-head">
+          <div>
+            <p>Open on another device</p>
+            <h2 id="qrTitle">Scan to Play</h2>
+          </div>
+          <button id="qrClose" type="button" aria-label="Close QR code">Close</button>
+        </header>
+        <img src="qr.svg" alt="QR code for Color Flip public game link">
+        <a href="https://timmyrow.github.io/Color-Flip/" target="_blank" rel="noopener">timmyrow.github.io/Color-Flip</a>
+      </div>
+    </section>
 
     <section id="shopPanel" class="shop-panel hidden" aria-modal="true" role="dialog" aria-labelledby="shopTitle">
       <div class="shop-card">

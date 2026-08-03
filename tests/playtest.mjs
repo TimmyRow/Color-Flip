@@ -172,6 +172,12 @@ async function runProfile(browser, profile) {
     expect(afterShop.coin === "ruby", `${profile.name} coin purchase did not equip`);
     expect(afterShop.block === "sharp", `${profile.name} block purchase did not equip`);
     expect(afterShop.effect === "rings", `${profile.name} effect purchase did not equip`);
+
+    await page.locator("#qr").click();
+    expect(await page.locator("#qrPanel:not(.hidden)").count() === 1, `${profile.name} QR panel did not open`);
+    expect(await page.locator("#qrPanel img[src='qr.svg']").count() === 1, `${profile.name} QR image missing`);
+    await page.locator("#qrClose").click();
+    expect(await page.locator("#qrPanel.hidden").count() === 1, `${profile.name} QR panel did not close`);
   });
   console.log(`PASS ${profile.name}`);
 }

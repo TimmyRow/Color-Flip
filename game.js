@@ -14,9 +14,12 @@
   const pauseButton = document.querySelector("#pause");
   const muteButton = document.querySelector("#mute");
   const shopButton = document.querySelector("#shop");
+  const qrButton = document.querySelector("#qr");
   const restartButton = document.querySelector("#restart");
   const shopPanel = document.querySelector("#shopPanel");
   const shopClose = document.querySelector("#shopClose");
+  const qrPanel = document.querySelector("#qrPanel");
+  const qrClose = document.querySelector("#qrClose");
   const shopWallet = document.querySelector("#shopWallet");
   const paletteShop = document.querySelector("#paletteShop");
   const backgroundShop = document.querySelector("#backgroundShop");
@@ -367,6 +370,7 @@
 
   function rotateSquare() {
     if (shopPanel && !shopPanel.classList.contains("hidden")) return;
+    if (qrPanel && !qrPanel.classList.contains("hidden")) return;
     if (state.mode === "ready" || state.mode === "over") {
       resetGame();
       return;
@@ -953,6 +957,11 @@
     shopPanel.classList.remove("hidden");
   });
   shopClose.addEventListener("click", () => shopPanel.classList.add("hidden"));
+  qrButton.addEventListener("click", () => {
+    if (state.mode === "playing") pauseGame();
+    qrPanel.classList.remove("hidden");
+  });
+  qrClose.addEventListener("click", () => qrPanel.classList.add("hidden"));
   muteButton.addEventListener("click", () => {
     state.muted = !state.muted;
     muteButton.textContent = state.muted ? "Muted" : "Sound";
@@ -965,7 +974,10 @@
     }
     if (event.code === "KeyP") pauseGame();
     if (event.code === "KeyR") resetGame();
-    if (event.code === "Escape") shopPanel.classList.add("hidden");
+    if (event.code === "Escape") {
+      shopPanel.classList.add("hidden");
+      qrPanel.classList.add("hidden");
+    }
   });
   window.addEventListener("blur", () => {
     if (state.mode === "playing") pauseGame();
