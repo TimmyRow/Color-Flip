@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <meta name="theme-color" content="#0f1117">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Color Flip">
+  <meta name="mobile-web-app-capable" content="yes">
+  <title>Color Flip</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="hud" aria-label="Game status">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+        <div>
+          <p>Color Flip</p>
+          <h1>Match the falling color.</h1>
+        </div>
+      </div>
+      <div class="stats" aria-live="polite">
+        <span><b id="score">0</b><small>score</small></span>
+        <span><b id="best">0</b><small>best</small></span>
+        <span><b id="streak">x1</b><small>streak</small></span>
+      </div>
+    </header>
+
+    <section class="stage">
+      <canvas id="game" width="900" height="1200" aria-label="Color Flip game canvas"></canvas>
+      <div id="curtain" class="curtain">
+        <div class="logo" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+        <p>Color Flip</p>
+        <h2>Tap to rotate.</h2>
+        <button id="play" type="button">Play</button>
+      </div>
+    </section>
+
+    <nav class="controls" aria-label="Game controls">
+      <button id="flip" class="primary" type="button" aria-label="Rotate square">Flip</button>
+      <button id="pause" type="button">Pause</button>
+      <button id="mute" type="button" aria-pressed="false">Sound</button>
+      <button id="restart" type="button">Restart</button>
+    </nav>
+  </main>
+
+  <script src="game.js"></script>
+</body>
+</html>
