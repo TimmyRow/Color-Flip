@@ -140,18 +140,50 @@ async function runProfile(browser, profile) {
     const afterCoin = await page.evaluate(() => window.__colorFlipDebug.getState());
     expect(afterCoin.wallet === walletBefore + 8, `${profile.name} coin did not collect on any color`);
 
-    await page.evaluate(() => window.__colorFlipDebug.grantCoins(320));
+    await page.evaluate(() => window.__colorFlipDebug.grantCoins(700));
     await page.locator("#shop").click();
     await page.locator(".shop-item", { hasText: "Neon Circuit" }).locator("button").click();
     await page.locator(".shop-item", { hasText: "Sunrise Rush" }).locator("button").click();
     await page.locator(".shop-item", { hasText: "Ruby Coins" }).locator("button").click();
+    await page.locator(".shop-item", { hasText: "Sharp Blocks" }).locator("button").click();
+    await page.locator(".shop-item", { hasText: "Glow Rings" }).locator("button").click();
     await page.locator("#shopClose").click();
     const afterShop = await page.evaluate(() => window.__colorFlipDebug.getState());
     expect(afterShop.palette === "neon", `${profile.name} palette purchase did not equip`);
     expect(afterShop.background === "sunrise", `${profile.name} background purchase did not equip`);
     expect(afterShop.coin === "ruby", `${profile.name} coin purchase did not equip`);
+    expect(afterShop.block === "sharp", `${profile.name} block purchase did not equip`);
+    expect(afterShop.effect === "rings", `${profile.name} effect purchase did not equip`);
   });
   console.log(`PASS ${profile.name}`);
+}
+
+async function missionAndReviveRegression(browser) {
+  await withPage(browser, profiles[0], async (page) => {
+    await page.goto(gameUrl, { waitUntil: "domcontentloaded" });
+    await page.waitForSelector("#game");
+    await page.waitForFunction(() => Boolean(window.__colorFlipDebug));
+    await page.evaluate(() => window.__colorFlipDebug.resetMissions());
+    const before = await page.evaluate(() => window.__colorFlipDebug.getState().wallet);
+    await page.evaluate(() => window.__colorFlipDebug.forceMissionProgress("score", 15));
+    const afterMission = await page.evaluate(() => window.__colorFlipDebug.getState());
+    expect(afterMission.wallet === before + 25, `mission reward did not pay: ${JSON.stringify(afterMission)}`);
+
+    await page.locator("#play").click();
+    await page.evaluate(() => {
+      window.__colorFlipDebug.rotateToTurns(0);
+      window.__colorFlipDebug.forceBlockDrop(0);
+    });
+    await page.waitForTimeout(160);
+    await page.evaluate(() => window.__colorFlipDebug.forceBlockDrop((window.__colorFlipDebug.getState().topColor === "red") ? 1 : 0));
+    await page.waitForTimeout(160);
+    const over = await page.evaluate(() => window.__colorFlipDebug.getState());
+    expect(over.mode === "over", `forced miss did not end game: ${JSON.stringify(over)}`);
+    await page.locator("#revive").click();
+    const revived = await page.evaluate(() => window.__colorFlipDebug.getState());
+    expect(revived.mode === "playing" && revived.revived, `revive did not continue play: ${JSON.stringify(revived)}`);
+  });
+  console.log("PASS mission and revive regression");
 }
 
 async function run() {
@@ -163,6 +195,7 @@ async function run() {
     await storageBlockedFallback(browser);
     await matchedColorRegression(browser);
     await repeatedColorRegression(browser);
+    await missionAndReviveRegression(browser);
   } finally {
     await browser.close();
   }

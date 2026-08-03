@@ -2,7 +2,7 @@
 
 Color Flip is a Poki-friendly HTML5 one-tap arcade game. Rotate the four-color square so falling blocks hit the matching top side, and collect coin drops on any color.
 
-Coins are worth 5 to 10 each and can be spent in the shop on square palettes, backgrounds, and coin styles.
+Coins are worth 5 to 10 each and can be spent in the shop on square palettes, backgrounds, coin styles, block shapes, and match effects. The game also includes a short first-run tutorial, session missions, smoother difficulty pacing, and one revive per run.
 
 ## Play locally
 

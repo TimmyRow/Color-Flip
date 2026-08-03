@@ -201,6 +201,34 @@ button:active {
   color: #111522;
 }
 
+.curtain button.hidden {
+  display: none;
+}
+
+.mission {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  z-index: 2;
+  max-width: min(520px, calc(100% - 24px));
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 8px;
+  transform: translateX(-50%);
+  background: rgba(17, 23, 34, 0.78);
+  color: #f6f7fb;
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-align: center;
+  text-transform: uppercase;
+  box-shadow: inset 0 0 0 1px var(--line), 0 12px 28px rgba(0, 0, 0, 0.2);
+  pointer-events: none;
+}
+
+.mission.hidden {
+  display: none;
+}
+
 .controls {
   display: grid;
   grid-template-columns: minmax(124px, 1fr) repeat(4, minmax(76px, 0.44fr));
@@ -276,7 +304,7 @@ button:active {
 
 .shop-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
 }
 
@@ -351,6 +379,11 @@ button:active {
   .shop-grid {
     grid-template-columns: 1fr;
   }
+
+  .mission {
+    top: 8px;
+    font-size: 0.68rem;
+  }
 }
 
 @media (orientation: landscape) and (max-height: 560px) {
@@ -382,5 +415,11 @@ button:active {
   #game {
     width: auto;
     height: calc(100dvh - 24px);
+  }
+
+  .mission {
+    top: auto;
+    bottom: 8px;
+    font-size: 0.64rem;
   }
 }

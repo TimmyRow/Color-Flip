@@ -8,7 +8,9 @@
   const streakEl = document.querySelector("#streak");
   const coinsEl = document.querySelector("#coins");
   const curtain = document.querySelector("#curtain");
+  const missionEl = document.querySelector("#mission");
   const playButton = document.querySelector("#play");
+  const reviveButton = document.querySelector("#revive");
   const flipButton = document.querySelector("#flip");
   const pauseButton = document.querySelector("#pause");
   const muteButton = document.querySelector("#mute");
@@ -20,6 +22,8 @@
   const paletteShop = document.querySelector("#paletteShop");
   const backgroundShop = document.querySelector("#backgroundShop");
   const coinShop = document.querySelector("#coinShop");
+  const blockShop = document.querySelector("#blockShop");
+  const effectShop = document.querySelector("#effectShop");
 
   const STORAGE = {
     best: "color-flip-best",
@@ -27,9 +31,15 @@
     palette: "color-flip-palette",
     background: "color-flip-background",
     coin: "color-flip-coin",
+    block: "color-flip-block",
+    effect: "color-flip-effect",
+    tutorial: "color-flip-tutorial-seen",
+    missions: "color-flip-completed-missions",
     ownedPalettes: "color-flip-owned-palettes",
     ownedBackgrounds: "color-flip-owned-backgrounds",
-    ownedCoins: "color-flip-owned-coins"
+    ownedCoins: "color-flip-owned-coins",
+    ownedBlocks: "color-flip-owned-blocks",
+    ownedEffects: "color-flip-owned-effects"
   };
 
   const PALETTES = [
@@ -83,6 +93,25 @@
     { id: "aqua", name: "Aqua Coins", price: 100, note: "Cool blue rewards.", fill: "#4de8ff", rim: "#d8fbff" }
   ];
 
+  const BLOCK_STYLES = [
+    { id: "rounded", name: "Rounded Blocks", price: 0, note: "Clean square drops.", radius: 12 },
+    { id: "sharp", name: "Sharp Blocks", price: 85, note: "Crisp diamond-like hits.", radius: 2 },
+    { id: "soft", name: "Soft Blocks", price: 115, note: "Chunky toy blocks.", radius: 20 }
+  ];
+
+  const EFFECT_STYLES = [
+    { id: "burst", name: "Pop Burst", price: 0, note: "Classic match pop.", particleBoost: 1, ring: false },
+    { id: "rings", name: "Glow Rings", price: 95, note: "Expanding match rings.", particleBoost: 0.8, ring: true },
+    { id: "spark", name: "Spark Shower", price: 130, note: "Extra match sparks.", particleBoost: 1.6, ring: false }
+  ];
+
+  const MISSIONS = [
+    { id: "score-15", label: "Score 15", metric: "score", target: 15, reward: 25 },
+    { id: "coins-40", label: "Collect 40 coins", metric: "coins", target: 40, reward: 35 },
+    { id: "streak-5", label: "Reach x5 streak", metric: "streak", target: 5, reward: 45 },
+    { id: "score-40", label: "Score 40", metric: "score", target: 40, reward: 60 }
+  ];
+
   const state = {
     mode: "ready",
     lastTime: 0,
@@ -102,11 +131,20 @@
     paletteId: readString(STORAGE.palette, "classic"),
     backgroundId: readString(STORAGE.background, "midnight"),
     coinId: readString(STORAGE.coin, "gold"),
+    blockId: readString(STORAGE.block, "rounded"),
+    effectId: readString(STORAGE.effect, "burst"),
+    tutorialSeen: readString(STORAGE.tutorial, "0") === "1",
+    revived: false,
     ownedPalettes: readList(STORAGE.ownedPalettes, ["classic"]),
     ownedBackgrounds: readList(STORAGE.ownedBackgrounds, ["midnight"]),
     ownedCoins: readList(STORAGE.ownedCoins, ["gold"]),
+    ownedBlocks: readList(STORAGE.ownedBlocks, ["rounded"]),
+    ownedEffects: readList(STORAGE.ownedEffects, ["burst"]),
+    completedMissions: readList(STORAGE.missions, []),
+    missionProgress: { score: 0, coins: 0, streak: 1 },
     particles: [],
     floats: [],
+    rings: [],
     flashes: []
   };
 
@@ -153,9 +191,13 @@
     if (!PALETTES.some((item) => item.id === state.paletteId)) state.paletteId = "classic";
     if (!BACKGROUNDS.some((item) => item.id === state.backgroundId)) state.backgroundId = "midnight";
     if (!COIN_STYLES.some((item) => item.id === state.coinId)) state.coinId = "gold";
+    if (!BLOCK_STYLES.some((item) => item.id === state.blockId)) state.blockId = "rounded";
+    if (!EFFECT_STYLES.some((item) => item.id === state.effectId)) state.effectId = "burst";
     for (const id of ["classic"]) if (!state.ownedPalettes.includes(id)) state.ownedPalettes.push(id);
     for (const id of ["midnight"]) if (!state.ownedBackgrounds.includes(id)) state.ownedBackgrounds.push(id);
     for (const id of ["gold"]) if (!state.ownedCoins.includes(id)) state.ownedCoins.push(id);
+    for (const id of ["rounded"]) if (!state.ownedBlocks.includes(id)) state.ownedBlocks.push(id);
+    for (const id of ["burst"]) if (!state.ownedEffects.includes(id)) state.ownedEffects.push(id);
   }
 
   function palette() {
@@ -172,6 +214,18 @@
 
   function coinStyle() {
     return COIN_STYLES.find((item) => item.id === state.coinId) || COIN_STYLES[0];
+  }
+
+  function blockStyle() {
+    return BLOCK_STYLES.find((item) => item.id === state.blockId) || BLOCK_STYLES[0];
+  }
+
+  function effectStyle() {
+    return EFFECT_STYLES.find((item) => item.id === state.effectId) || EFFECT_STYLES[0];
+  }
+
+  function activeMission() {
+    return MISSIONS.find((mission) => !state.completedMissions.includes(mission.id)) || MISSIONS[0];
   }
 
   function createPokiBridge() {
@@ -239,17 +293,21 @@
     state.mode = "playing";
     state.score = 0;
     state.streak = 1;
+    state.revived = false;
     state.rotation = 0;
     state.targetRotation = 0;
-    state.speed = 292;
-    state.spawnDelay = 0.2;
+    state.speed = state.tutorialSeen ? 270 : 205;
+    state.spawnDelay = state.tutorialSeen ? 0.2 : 0.45;
     state.shake = 0;
     state.drop = null;
     state.blockHistory.length = 0;
     state.particles.length = 0;
     state.floats.length = 0;
+    state.rings.length = 0;
     state.flashes.length = 0;
+    state.missionProgress = { score: 0, coins: 0, streak: 1 };
     state.nextDrop = makeNextDrop();
+    reviveButton.classList.add("hidden");
     curtain.classList.add("hidden");
     pauseButton.textContent = "Pause";
     updateHud();
@@ -263,9 +321,20 @@
     streakEl.textContent = `x${state.streak}`;
     coinsEl.textContent = String(state.wallet);
     shopWallet.textContent = `${state.wallet} coins`;
+    updateMissionHud();
+  }
+
+  function updateMissionHud() {
+    const mission = activeMission();
+    const value = Math.min(mission.target, state.missionProgress[mission.metric] || 0);
+    missionEl.textContent = `Mission: ${mission.label} ${value}/${mission.target} (+${mission.reward})`;
+    missionEl.classList.toggle("hidden", state.mode !== "playing");
   }
 
   function makeNextDrop() {
+    if (!state.tutorialSeen && state.score === 0) {
+      return { kind: "block", color: topColorIndex() };
+    }
     if (state.score >= 2 && Math.random() < 0.22) {
       return { kind: "coin", value: 5 + Math.floor(Math.random() * 6) };
     }
@@ -316,6 +385,7 @@
       curtain.querySelector("p").textContent = "Color Flip";
       playButton.textContent = "Resume";
       curtain.classList.remove("hidden");
+      updateHud();
       poki.gameplayStop();
       return;
     }
@@ -323,6 +393,7 @@
       state.mode = "playing";
       curtain.classList.add("hidden");
       pauseButton.textContent = "Pause";
+      updateHud();
       poki.gameplayStart();
     }
   }
@@ -339,19 +410,48 @@
     curtain.querySelector("h2").textContent = state.score === state.best && state.score > 0 ? "New best." : "Try again.";
     curtain.querySelector("p").textContent = `${state.score} points`;
     playButton.textContent = "Replay";
+    reviveButton.classList.toggle("hidden", state.revived || state.score <= 0);
     curtain.classList.remove("hidden");
     playTone(92, 0.2, "sawtooth", 0.035);
     poki.commercialBreak();
   }
 
+  function reviveGame() {
+    if (state.mode !== "over" || state.revived) return;
+    state.revived = true;
+    state.mode = "playing";
+    state.streak = 1;
+    state.speed = Math.max(255, state.speed - 42);
+    state.spawnDelay = 0.65;
+    state.drop = null;
+    state.shake = 0;
+    state.flashes.push({ life: 0.22, color: "rgba(246, 247, 251, 0.16)" });
+    state.floats.push({ text: "REVIVED", x: canvas.width / 2, y: canvas.height * 0.42, life: 1.05 });
+    reviveButton.classList.add("hidden");
+    curtain.classList.add("hidden");
+    updateHud();
+    poki.gameplayStart();
+  }
+
   function scoreHit() {
     state.score += state.streak;
     state.streak = Math.min(9, state.streak + 1);
-    state.speed = Math.min(570, state.speed + 7);
+    state.speed = Math.min(535, 255 + state.score * 4.5 + Math.max(0, state.streak - 1) * 5);
     state.flashes.push({ life: 0.16, color: colors()[state.drop.color].glow });
-    burst(canvas.width / 2, impactY(), colors()[state.drop.color].value, 28);
+    burst(canvas.width / 2, impactY(), colors()[state.drop.color].value, Math.round(28 * effectStyle().particleBoost));
+    if (effectStyle().ring) state.rings.push({ x: canvas.width / 2, y: impactY(), radius: 24, life: 0.5, color: colors()[state.drop.color].value });
+    state.floats.push({ text: state.streak >= 4 ? `x${state.streak}` : "MATCH", x: canvas.width / 2, y: impactY() - 18, life: 0.62 });
     playTone(520 + state.streak * 38, 0.05, "sine", 0.035);
-    clearDrop(0.34 - state.score * 0.004);
+    state.missionProgress.score = Math.max(state.missionProgress.score, state.score);
+    state.missionProgress.streak = Math.max(state.missionProgress.streak, state.streak);
+    completeMissionIfReady();
+    if (!state.tutorialSeen && state.score >= 1) {
+      state.tutorialSeen = true;
+      save(STORAGE.tutorial, "1");
+      state.floats.push({ text: "GOOD", x: canvas.width / 2, y: canvas.height * 0.35, life: 0.8 });
+    }
+    const breather = state.streak > 1 && state.streak % 5 === 0 ? 0.52 : 0;
+    clearDrop(Math.max(breather, 0.34 - state.score * 0.003));
     updateHud();
   }
 
@@ -359,12 +459,34 @@
     const value = state.drop.value;
     state.wallet += value;
     save(STORAGE.coins, String(state.wallet));
+    state.missionProgress.coins += value;
+    completeMissionIfReady();
     state.floats.push({ text: `+${value}`, x: canvas.width / 2, y: impactY() - 12, life: 0.85 });
     burst(canvas.width / 2, impactY(), coinStyle().fill, 24);
     playTone(760 + value * 16, 0.07, "square", 0.025);
     clearDrop(0.18);
     updateHud();
     renderShop();
+  }
+
+  function completeMissionIfReady() {
+    const mission = activeMission();
+    const value = state.missionProgress[mission.metric] || 0;
+    if (state.completedMissions.includes(mission.id) || value < mission.target) return;
+    state.completedMissions.push(mission.id);
+    save(STORAGE.missions, state.completedMissions);
+    state.wallet += mission.reward;
+    save(STORAGE.coins, String(state.wallet));
+    state.floats.push({ text: `MISSION +${mission.reward}`, x: canvas.width / 2, y: canvas.height * 0.27, life: 1.25 });
+    burst(canvas.width / 2, canvas.height * 0.32, coinStyle().fill, 36);
+    playTone(980, 0.12, "triangle", 0.03);
+  }
+
+  function resetMissionsForDebug() {
+    state.completedMissions.length = 0;
+    state.missionProgress = { score: 0, coins: 0, streak: 1 };
+    save(STORAGE.missions, state.completedMissions);
+    updateHud();
   }
 
   function clearDrop(delay) {
@@ -406,6 +528,13 @@
       if (float.life <= 0) state.floats.splice(index, 1);
     }
 
+    for (let index = state.rings.length - 1; index >= 0; index -= 1) {
+      const ring = state.rings[index];
+      ring.life -= dt;
+      ring.radius += 220 * dt;
+      if (ring.life <= 0) state.rings.splice(index, 1);
+    }
+
     for (let index = state.flashes.length - 1; index >= 0; index -= 1) {
       state.flashes[index].life -= dt;
       if (state.flashes[index].life <= 0) state.flashes.splice(index, 1);
@@ -427,7 +556,9 @@
         scoreHit();
       } else {
         state.streak = 1;
-        burst(canvas.width / 2, impactY(), "#f6f7fb", 34);
+        state.flashes.push({ life: 0.22, color: "rgba(255, 77, 95, 0.22)" });
+        burst(canvas.width / 2, impactY(), "#f6f7fb", 42);
+        state.rings.push({ x: canvas.width / 2, y: impactY(), radius: 18, life: 0.42, color: "#ff4d5f" });
         updateHud();
         gameOver();
       }
@@ -462,6 +593,7 @@
     drawDrop();
     drawNext();
     drawParticles();
+    drawRings();
     drawFloats();
     ctx.restore();
   }
@@ -556,7 +688,7 @@
       ctx.shadowBlur = 26;
       ctx.shadowColor = color.glow;
       ctx.fillStyle = color.value;
-      roundRect(-drop.size / 2, -drop.size / 2, drop.size, drop.size, 12);
+      roundRect(-drop.size / 2, -drop.size / 2, drop.size, drop.size, blockStyle().radius);
       ctx.fill();
       ctx.shadowBlur = 0;
       ctx.fillStyle = "rgba(255, 255, 255, 0.34)";
@@ -623,6 +755,20 @@
     ctx.globalAlpha = 1;
   }
 
+  function drawRings() {
+    ctx.save();
+    for (const ring of state.rings) {
+      ctx.globalAlpha = Math.max(0, ring.life / 0.5);
+      ctx.strokeStyle = ring.color;
+      ctx.lineWidth = 6;
+      ctx.beginPath();
+      ctx.arc(ring.x, ring.y, ring.radius, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.restore();
+    ctx.globalAlpha = 1;
+  }
+
   function drawFloats() {
     ctx.save();
     ctx.textAlign = "center";
@@ -652,6 +798,8 @@
     renderShopGroup(paletteShop, PALETTES, "palette");
     renderShopGroup(backgroundShop, BACKGROUNDS, "background");
     renderShopGroup(coinShop, COIN_STYLES, "coin");
+    renderShopGroup(blockShop, BLOCK_STYLES, "block");
+    renderShopGroup(effectShop, EFFECT_STYLES, "effect");
     updateHud();
   }
 
@@ -688,18 +836,24 @@
   function swatchColors(item, type) {
     if (type === "palette") return item.colors.map((color) => color.value);
     if (type === "background") return item.stops;
+    if (type === "block") return ["#f6f7fb", "#cdd6e8"];
+    if (type === "effect") return item.ring ? ["#46a6ff", "#f6f7fb"] : ["#ffd15c", "#ff4d5f"];
     return [item.fill, item.rim];
   }
 
   function ownedList(type) {
     if (type === "palette") return state.ownedPalettes;
     if (type === "background") return state.ownedBackgrounds;
+    if (type === "block") return state.ownedBlocks;
+    if (type === "effect") return state.ownedEffects;
     return state.ownedCoins;
   }
 
   function selectedId(type) {
     if (type === "palette") return state.paletteId;
     if (type === "background") return state.backgroundId;
+    if (type === "block") return state.blockId;
+    if (type === "effect") return state.effectId;
     return state.coinId;
   }
 
@@ -710,6 +864,12 @@
     } else if (type === "background") {
       state.backgroundId = id;
       save(STORAGE.background, id);
+    } else if (type === "block") {
+      state.blockId = id;
+      save(STORAGE.block, id);
+    } else if (type === "effect") {
+      state.effectId = id;
+      save(STORAGE.effect, id);
     } else {
       state.coinId = id;
       save(STORAGE.coin, id);
@@ -720,6 +880,8 @@
     if (type === "palette") save(STORAGE.ownedPalettes, state.ownedPalettes);
     if (type === "background") save(STORAGE.ownedBackgrounds, state.ownedBackgrounds);
     if (type === "coin") save(STORAGE.ownedCoins, state.ownedCoins);
+    if (type === "block") save(STORAGE.ownedBlocks, state.ownedBlocks);
+    if (type === "effect") save(STORAGE.ownedEffects, state.ownedEffects);
   }
 
   function buyOrSelect(type, item) {
@@ -776,6 +938,7 @@
       resetGame();
     }
   });
+  reviveButton.addEventListener("click", reviveGame);
   flipButton.addEventListener("pointerdown", handlePrimaryAction);
   canvas.addEventListener("pointerdown", handlePrimaryAction);
   restartButton.addEventListener("click", resetGame);
@@ -819,6 +982,10 @@
         palette: state.paletteId,
         background: state.backgroundId,
         coin: state.coinId,
+        block: state.blockId,
+        effect: state.effectId,
+        mission: activeMission().id,
+        revived: state.revived,
         topColor: colors()[topColorIndex()].name
       }),
       forceCoinDrop(value = 7) {
@@ -843,6 +1010,17 @@
         state.wallet += value;
         save(STORAGE.coins, String(state.wallet));
         renderShop();
+      },
+      forceMissionProgress(metric, value) {
+        state.missionProgress[metric] = value;
+        completeMissionIfReady();
+        updateHud();
+      },
+      revive: reviveGame,
+      resetMissions: resetMissionsForDebug,
+      resetTutorial() {
+        state.tutorialSeen = false;
+        save(STORAGE.tutorial, "0");
       }
     };
   });

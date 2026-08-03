@@ -31,12 +31,14 @@
     </header>
 
     <section class="stage">
+      <p id="mission" class="mission">Mission: score 15</p>
       <canvas id="game" width="900" height="1200" aria-label="Color Flip game canvas"></canvas>
       <div id="curtain" class="curtain">
         <div class="logo" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
         <p>Color Flip</p>
         <h2>Tap to rotate.</h2>
         <button id="play" type="button">Play</button>
+        <button id="revive" class="hidden" type="button">Revive</button>
       </div>
     </section>
 
@@ -64,6 +66,10 @@
         <div id="backgroundShop" class="shop-grid"></div>
         <h3>Coin Styles</h3>
         <div id="coinShop" class="shop-grid"></div>
+        <h3>Block Shapes</h3>
+        <div id="blockShop" class="shop-grid"></div>
+        <h3>Match Effects</h3>
+        <div id="effectShop" class="shop-grid"></div>
       </div>
     </section>
   </main>
