@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <rect width="128" height="128" rx="28" fill="#10141f"/>
+  <g transform="translate(64 64) rotate(45)">
+    <clipPath id="diamond">
+      <rect x="-38" y="-38" width="76" height="76" rx="10"/>
+    </clipPath>
+    <g clip-path="url(#diamond)">
+      <rect x="-38" y="-38" width="38" height="38" fill="#ff4d5f"/>
+      <rect x="0" y="-38" width="38" height="38" fill="#ffd15c"/>
+      <rect x="-38" y="0" width="38" height="38" fill="#46a6ff"/>
+      <rect x="0" y="0" width="38" height="38" fill="#3ee28a"/>
+    </g>
+  </g>
+</svg>
