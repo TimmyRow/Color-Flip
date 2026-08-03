@@ -16,8 +16,20 @@ function expect(condition, message) {
   if (!condition) throw new Error(message);
 }
 
-async function withPage(browser, profile, fn) {
+async function withPage(browser, profile, fn, options = {}) {
   const context = await browser.newContext(profile);
+  if (options.blockStorage) {
+    await context.addInitScript(() => {
+      for (const method of ["getItem", "setItem", "removeItem"]) {
+        Object.defineProperty(Storage.prototype, method, {
+          configurable: true,
+          value() {
+            throw new Error("localStorage disabled by playtest");
+          }
+        });
+      }
+    });
+  }
   const page = await context.newPage();
   const errors = [];
   page.on("console", (message) => {
@@ -31,6 +43,22 @@ async function withPage(browser, profile, fn) {
   } finally {
     await context.close();
   }
+}
+
+async function storageBlockedFallback(browser) {
+  await withPage(browser, devices["iPhone 14"], async (page) => {
+    await page.goto(gameUrl, { waitUntil: "domcontentloaded" });
+    await page.waitForSelector("#game");
+    await page.waitForFunction(() => Boolean(window.__colorFlipDebug));
+    await page.locator("#play").click();
+    await page.evaluate(() => window.__colorFlipDebug.forceCoinDrop(6));
+    await page.waitForTimeout(160);
+    const state = await page.evaluate(() => window.__colorFlipDebug.getState());
+    expect(state.wallet === 6, `coin collection failed without localStorage: ${JSON.stringify(state)}`);
+    await page.locator("#shop").click();
+    expect(await page.locator("#shopPanel:not(.hidden)").count() === 1, "shop did not open without localStorage");
+  }, { blockStorage: true });
+  console.log("PASS storage-blocked fallback");
 }
 
 async function runProfile(browser, profile) {
@@ -98,6 +126,7 @@ async function run() {
     for (const profile of profiles) {
       await runProfile(browser, profile);
     }
+    await storageBlockedFallback(browser);
   } finally {
     await browser.close();
   }
