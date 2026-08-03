@@ -47,9 +47,9 @@
   const PALETTES = [
     {
       id: "classic",
-      name: "Classic Pop",
+      name: "Classic Color Skin",
       price: 0,
-      note: "Bright arcade colors.",
+      note: "Changes the rotator and falling blocks.",
       colors: [
         { name: "red", value: "#ff4d5f", glow: "rgba(255, 77, 95, 0.38)" },
         { name: "yellow", value: "#ffd15c", glow: "rgba(255, 209, 92, 0.36)" },
@@ -59,9 +59,9 @@
     },
     {
       id: "neon",
-      name: "Neon Circuit",
+      name: "Neon Color Skin",
       price: 80,
-      note: "Sharper electric sides.",
+      note: "Changes the rotator and falling blocks.",
       colors: [
         { name: "pink", value: "#ff3bd4", glow: "rgba(255, 59, 212, 0.38)" },
         { name: "lime", value: "#b6ff3b", glow: "rgba(182, 255, 59, 0.34)" },
@@ -71,9 +71,9 @@
     },
     {
       id: "sorbet",
-      name: "Sorbet Tilt",
+      name: "Sorbet Color Skin",
       price: 120,
-      note: "Soft, readable pastels.",
+      note: "Changes the rotator and falling blocks.",
       colors: [
         { name: "berry", value: "#ff7790", glow: "rgba(255, 119, 144, 0.34)" },
         { name: "mango", value: "#ffc857", glow: "rgba(255, 200, 87, 0.34)" },
@@ -84,9 +84,9 @@
   ];
 
   const BACKGROUNDS = [
-    { id: "midnight", name: "Midnight Glass", price: 0, note: "Clean dark arena.", stops: ["#151b29", "#10141f", "#181923"], line: "rgba(255, 255, 255, 0.045)" },
-    { id: "sunrise", name: "Sunrise Rush", price: 90, note: "Warm arcade glow.", stops: ["#251727", "#171626", "#2d1f16"], line: "rgba(255, 209, 92, 0.06)" },
-    { id: "mint", name: "Mint Night", price: 110, note: "Cool green motion.", stops: ["#10211e", "#101822", "#171b27"], line: "rgba(62, 226, 138, 0.06)" }
+    { id: "midnight", name: "Midnight Background", price: 0, note: "Dark clean game arena.", stops: ["#151b29", "#10141f", "#181923"], line: "rgba(255, 255, 255, 0.045)" },
+    { id: "skyline", name: "Skyline Background", price: 90, note: "Blue city-light arena.", stops: ["#19345c", "#13243d", "#201f35"], line: "rgba(101, 212, 255, 0.1)" },
+    { id: "candy", name: "Candy Background", price: 110, note: "Bright candy arcade arena.", stops: ["#3c214a", "#253a66", "#224a3c"], line: "rgba(255, 209, 92, 0.11)" }
   ];
 
   const COIN_STYLES = [
@@ -939,6 +939,16 @@
     event.preventDefault();
     rotateSquare();
   }
+
+  let lastTouchEnd = 0;
+  document.addEventListener("touchend", (event) => {
+    const now = Date.now();
+    if (now - lastTouchEnd < 320 && !event.target.closest(".shop-card")) {
+      event.preventDefault();
+    }
+    lastTouchEnd = now;
+  }, { passive: false });
+  document.addEventListener("gesturestart", (event) => event.preventDefault(), { passive: false });
 
   playButton.addEventListener("click", () => {
     if (state.mode === "paused") {

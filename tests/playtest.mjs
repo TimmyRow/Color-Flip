@@ -160,15 +160,15 @@ async function runProfile(browser, profile) {
 
     await page.evaluate(() => window.__colorFlipDebug.grantCoins(700));
     await page.locator("#shop").click();
-    await page.locator(".shop-item", { hasText: "Neon Circuit" }).locator("button").click();
-    await page.locator(".shop-item", { hasText: "Sunrise Rush" }).locator("button").click();
+    await page.locator(".shop-item", { hasText: "Neon Color Skin" }).locator("button").click();
+    await page.locator(".shop-item", { hasText: "Skyline Background" }).locator("button").click();
     await page.locator(".shop-item", { hasText: "Ruby Coins" }).locator("button").click();
     await page.locator(".shop-item", { hasText: "Sharp Blocks" }).locator("button").click();
     await page.locator(".shop-item", { hasText: "Glow Rings" }).locator("button").click();
     await page.locator("#shopClose").click();
     const afterShop = await page.evaluate(() => window.__colorFlipDebug.getState());
     expect(afterShop.palette === "neon", `${profile.name} palette purchase did not equip`);
-    expect(afterShop.background === "sunrise", `${profile.name} background purchase did not equip`);
+    expect(afterShop.background === "skyline", `${profile.name} background purchase did not equip`);
     expect(afterShop.coin === "ruby", `${profile.name} coin purchase did not equip`);
     expect(afterShop.block === "sharp", `${profile.name} block purchase did not equip`);
     expect(afterShop.effect === "rings", `${profile.name} effect purchase did not equip`);
